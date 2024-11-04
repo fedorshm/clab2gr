@@ -1,6 +1,3 @@
-# clab2gr
+# CaseLAB 2 группа
 
 Репа проекта
-
-CaseLAB 2 группа
-
