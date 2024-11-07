@@ -1,6 +1,7 @@
 Dataset_images/
 docx/
 image/
-myenv/
+venv/
 pdf/
 .DS_store
+pdf_marking.py
