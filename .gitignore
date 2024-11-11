@@ -6,4 +6,4 @@ pdf/
 pdf_marking_test.py
 font_sizes.csv
 .DS_Store
-
+json_annotations/
