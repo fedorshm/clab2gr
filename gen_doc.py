@@ -1,7 +1,8 @@
 import os
 import random
 from collections import OrderedDict
-import csv  
+import csv
+import json  
 from docx import Document
 from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH  
@@ -31,44 +32,69 @@ def create_document(index):
         section.page_width, section.page_height = section.page_height, section.page_width
 
     base_font_size = random.choice(range(8, 17))
+    blocks = []
 
     if random.choice([True, False]):
         add_title(doc, base_font_size)
+        blocks.append("title")
 
     if random.choice([True, False]):
         add_paragraph(doc, base_font_size)
+        blocks.append("paragraph")
+
     if random.choice([True, False]):    
         add_header(doc, base_font_size)
+        blocks.append("header")
+
     if random.choice([True, False]):      
         add_footer(doc)
+        blocks.append("footer")
 
+        
     if random.choice([True, False]):  
         add_table(doc, base_font_size)
+        blocks.append("table")
 
     if random.choice([True, False]):
         add_paragraph(doc, base_font_size)
+        blocks.append("paragraph")
 
     if random.choice([True, False]):  
         add_picture(doc, base_font_size)
+        blocks.append("picture")
+
     if random.choice([True, False]):      
         add_numbered_list(doc, base_font_size)
+        blocks.append("numbered_list")
+
     if random.choice([True, False]):      
         add_marked_list(doc, base_font_size)
+        blocks.append("marked_list")
+
     if random.choice([True, False]):      
-        add_formula(doc, base_font_size) 
+        add_formula(doc, base_font_size)
+        blocks.append("formula") 
 
     if random.choice([True, False]):  
-        add_table(doc, base_font_size)  
+        add_table(doc, base_font_size)
+        blocks.append("table")   
 
     #if random.choice([True, False]):
     #    add_footnote(doc, base_font_size)
-
+    #     blocks.append("table") 
     output_dir = "docx"
     os.makedirs(output_dir, exist_ok=True)  
 
     filename = os.path.join(output_dir, f"doc_{index}.docx")
     doc.save(filename)
     
+    json_output_dir = "json_annotations"
+    os.makedirs(json_output_dir, exist_ok=True)
+    json_filename = os.path.join(json_output_dir, f"doc_{index}.json")
+    with open(json_filename, "w", encoding="utf-8") as json_file:
+        json.dump({"filename": filename, "blocks": blocks}, json_file, ensure_ascii=False, indent=4)
+    print("add_json_annotation")
+
     return filename, base_font_size  
 def create_annotation():
     pass
@@ -427,16 +453,6 @@ def to_superscript(number):
     return str(number).translate(superscript_map)
 
 def insert_footnote(paragraph, text, base_font_size, current_page_footnotes, footnote_per_page):
-    """
-    Вставляет сноску в текст абзаца с вероятностью 20% и ограничением по количеству сносок на страницу.
-    
-    :param paragraph: Абзац, в который вставляется текст.
-    :param text: Текст абзаца.
-    :param base_font_size: Базовый размер шрифта.
-    :param current_page_footnotes: Список сносок текущей страницы.
-    :param footnote_per_page: Максимальное количество сносок на страницу.
-    :return: None
-    """
     words = text.split()
     if len(words) < 3:
         run = paragraph.add_run(text)
@@ -461,12 +477,7 @@ def insert_footnote(paragraph, text, base_font_size, current_page_footnotes, foo
         run.font.size = Pt(base_font_size)
 
 def add_footnotes_section(doc, footnotes, base_font_size):
-    """
-    Добавляет раздел с сносками в конец страницы.
-    
-    :param doc: Объект Document.
-    :param footnotes: Список кортежей (номер сноски, текст сноски).
-    """
+
     if not footnotes:
         return
 
@@ -493,9 +504,9 @@ def add_formula(doc, base_font_size):
 def main():
     all_data = []  # Список для хранения данных о документах
 
-    for index in range(1000):  
+    for index in range(10):  
         filename, base_font_size = create_document(index)
-        base_filename = os.path.splitext(os.path.basename(filename))[0]  # Получаем имя без расширения
+        base_filename = os.path.splitext(os.path.basename(filename))[0]  
         all_data.append({'filename': base_filename, 'base_font_size': base_font_size})
         print(f"Сгенерирован документ: {filename} с базовым размером шрифта: {base_font_size}")
 
