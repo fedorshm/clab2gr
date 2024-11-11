@@ -3,7 +3,7 @@ docx/
 image/
 venv/
 pdf/
-pdf_marking.py
+pdf_marking_test.py
 font_sizes.csv
 .DS_Store
 
