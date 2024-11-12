@@ -8,3 +8,6 @@ font_sizes.csv
 .DS_Store
 json_annotations/
 __pycache__/pdf_marking.cpython-313.pyc
+json_output/
+test_mark.py
+tests/test_cls_titles.py
