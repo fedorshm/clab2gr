@@ -504,7 +504,7 @@ def add_formula(doc, base_font_size):
 def main():
     all_data = []  # Список для хранения данных о документах
 
-    for index in range(10):  
+    for index in range(10000):  
         filename, base_font_size = create_document(index)
         base_filename = os.path.splitext(os.path.basename(filename))[0]  
         all_data.append({'filename': base_filename, 'base_font_size': base_font_size})
