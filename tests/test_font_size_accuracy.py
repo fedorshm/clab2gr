@@ -2,11 +2,22 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from pdf_marking import load_font_sizes, extract_font_sizes
+from pdf_marking import extract_font_sizes
 import csv
-from pdf_marking import load_font_sizes, extract_font_sizes
+from pdf_marking import extract_font_sizes
 import glob
 
+
+def load_font_sizes(csv_path):
+    font_sizes = {}
+    try:
+        with open(csv_path, newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                font_sizes[row['filename']] = int(row['base_font_size'])
+    except Exception as e:
+        print(f"Ошибка при загрузке истинных размеров шрифтов из {csv_path}: {e}")
+    return font_sizes
 def get_pdf_files(directory):
     abs_directory = os.path.abspath(directory)
     pdf_files = glob.glob(os.path.join(abs_directory, "*.pdf")) + glob.glob(os.path.join(abs_directory, "*.PDF"))
