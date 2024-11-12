@@ -3,17 +3,9 @@ from collections import Counter
 from pdfminer.high_level import extract_pages
 import csv
 import glob
+import os
 
-def load_font_sizes(csv_path):
-    font_sizes = {}
-    try:
-        with open(csv_path, newline='', encoding='utf-8') as csvfile:
-            reader = csv.DictReader(csvfile)
-            for row in reader:
-                font_sizes[row['filename']] = int(row['base_font_size'])
-    except Exception as e:
-        print(f"Ошибка при загрузке истинных размеров шрифтов из {csv_path}: {e}")
-    return font_sizes
+
 
 def extract_font_sizes(pdf_path):
     font_sizes = []
@@ -83,3 +75,16 @@ def detect_titles(pdf_path, base_font_size):
                 print(f"Найден заголовок: '{element.get_text().strip()}' с координатами "
                       f"({element.x0}, {element.y0}, {element.x1}, {element.y1})")
     return titles
+
+def get_pdf_files(directory):
+    abs_directory = os.path.abspath(directory)
+    pdf_files = glob.glob(os.path.join(abs_directory, "*.pdf")) + glob.glob(os.path.join(abs_directory, "*.PDF"))
+    return pdf_files
+
+
+directory = "pdf"
+pdf_files = get_pdf_files(directory)
+for pdf_file in pdf_files:
+    base_filename = os.path.splitext(os.path.basename(pdf_file))[0]
+    base_size = extract_font_sizes(pdf_file)
+    print(f"Файл: {base_filename}.pdf,Базоаый размер шрифта {base_size}")
