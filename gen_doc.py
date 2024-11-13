@@ -2,18 +2,18 @@ import os
 import random
 from collections import OrderedDict
 import csv
-import json  
+import json
 from docx import Document
 from docx.shared import Pt, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH  
-from docx.enum.table import WD_TABLE_ALIGNMENT  
-from docx.enum.section import WD_ORIENTATION  
-from docx.oxml.ns import qn  
-from docx.oxml import OxmlElement  
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.section import WD_ORIENTATION
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
 
-from faker import Faker  
-from mimesis import Person, Datetime  
-from mimesis.locales import Locale  
+from faker import Faker
+from mimesis import Person, Datetime
+from mimesis.locales import Locale
 
 import sympy as sp
 import matplotlib.pyplot as plt
@@ -22,6 +22,15 @@ from io import BytesIO
 
 locales = OrderedDict([('en-US', 1), ('ru-RU', 2)])
 fake = Faker(locales)
+
+block_frequencies = {
+    'paragraph': 40,
+    'table': 15,
+    'picture': 15,
+    'numbered_list': 10,
+    'marked_list': 10,
+    'formula': 10
+}
 
 def create_document(index):
     doc = Document()
@@ -33,61 +42,50 @@ def create_document(index):
 
     base_font_size = random.choice(range(8, 17))
     blocks = []
+    footnotes = []
 
-    if random.choice([True, False]):
-        add_title(doc, base_font_size)
-        blocks.append("title")
+    add_title(doc, base_font_size)
+    blocks.append("title")
+    doc.add_paragraph()
 
-    if random.choice([True, False]):
-        add_paragraph(doc, base_font_size)
-        blocks.append("paragraph")
+    add_header(doc, base_font_size)
+    blocks.append("header")
+    doc.add_paragraph()
 
-    if random.choice([True, False]):    
-        add_header(doc, base_font_size)
-        blocks.append("header")
+    add_footer(doc)
+    blocks.append("footer")
+    doc.add_paragraph()
 
-    if random.choice([True, False]):      
-        add_footer(doc)
-        blocks.append("footer")
+    num_blocks = random.randint(10, 20)
 
-        
-    if random.choice([True, False]):  
-        add_table(doc, base_font_size)
-        blocks.append("table")
+    block_types = list(block_frequencies.keys())
+    weights = list(block_frequencies.values())
 
-    if random.choice([True, False]):
-        add_paragraph(doc, base_font_size)
-        blocks.append("paragraph")
+    for _ in range(num_blocks):
+        block = random.choices(block_types, weights=weights, k=1)[0]
+        if block == 'paragraph':
+            add_paragraph(doc, base_font_size, footnotes)
+        elif block == 'table':
+            add_table(doc, base_font_size)
+        elif block == 'picture':
+            add_picture(doc, base_font_size)
+        elif block == 'numbered_list':
+            add_numbered_list(doc, base_font_size)
+        elif block == 'marked_list':
+            add_marked_list(doc, base_font_size)
+        elif block == 'formula':
+            add_formula(doc, base_font_size)
+        blocks.append(block)
+        doc.add_paragraph()
 
-    if random.choice([True, False]):  
-        add_picture(doc, base_font_size)
-        blocks.append("picture")
+    add_footnotes_section(doc, footnotes, base_font_size)
 
-    if random.choice([True, False]):      
-        add_numbered_list(doc, base_font_size)
-        blocks.append("numbered_list")
-
-    if random.choice([True, False]):      
-        add_marked_list(doc, base_font_size)
-        blocks.append("marked_list")
-
-    if random.choice([True, False]):      
-        add_formula(doc, base_font_size)
-        blocks.append("formula") 
-
-    if random.choice([True, False]):  
-        add_table(doc, base_font_size)
-        blocks.append("table")   
-
-    #if random.choice([True, False]):
-    #    add_footnote(doc, base_font_size)
-    #     blocks.append("table") 
     output_dir = "docx"
-    os.makedirs(output_dir, exist_ok=True)  
+    os.makedirs(output_dir, exist_ok=True)
 
     filename = os.path.join(output_dir, f"doc_{index}.docx")
     doc.save(filename)
-    
+
     json_output_dir = "json_annotations"
     os.makedirs(json_output_dir, exist_ok=True)
     json_filename = os.path.join(json_output_dir, f"doc_{index}.json")
@@ -95,7 +93,8 @@ def create_document(index):
         json.dump({"filename": filename, "blocks": blocks}, json_file, ensure_ascii=False, indent=4)
     print("add_json_annotation")
 
-    return filename, base_font_size  
+    return filename, base_font_size
+
 def create_annotation():
     pass
 
@@ -109,7 +108,10 @@ def generate_formula_image():
 
     def random_symbol():
         category = random.choice(['variables', 'greek', 'constants'])
-        return random.choice(symbols_dict[category])
+        if category == 'constants':
+            return random.choice(symbols_dict['constants'])
+        else:
+            return random.choice(symbols_dict[category])
 
     def random_expression(depth=0):
         if depth > 2 or random.choice([True, False]):
@@ -121,7 +123,7 @@ def generate_formula_image():
         else:
             left = random_expression(depth + 1)
             right = random_expression(depth + 1)
-            operator = random.choice(['+', "-", '-', '*', '/', '**'])
+            operator = random.choice(['+', '-', '*', '/', '**'])
             if operator == '+':
                 return left + right
             elif operator == '-':
@@ -137,7 +139,14 @@ def generate_formula_image():
             else:
                 return left
 
-    expr = random_expression()
+    while True:
+        expr = random_expression()
+        num_symbols = len(expr.free_symbols)
+        num_constants = len(expr.atoms(sp.pi)) + len(expr.atoms(sp.E))
+        num_total = num_symbols + num_constants
+        if num_total >= 3:
+            break
+
     latex_formula = sp.latex(expr)
 
     plt.figure(figsize=(5, 1.5))
@@ -147,35 +156,37 @@ def generate_formula_image():
     image_stream = BytesIO()
     plt.savefig(image_stream, format='png', bbox_inches='tight', pad_inches=0.1, transparent=True)
     plt.close()
-    image_stream.seek(0) 
+    image_stream.seek(0)
 
     return image_stream
 
 def remove_table_borders(table):
-    tbl = table._tbl  
-    tblPr = tbl.tblPr  
+    tbl = table._tbl
+    tblPr = tbl.tblPr
     borders = OxmlElement('w:tblBorders')
 
     for border_name in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
         border = OxmlElement(f'w:{border_name}')
-        border.set(qn('w:val'), 'nil') 
+        border.set(qn('w:val'), 'nil')
         borders.append(border)
 
     tblPr.append(borders)
 
-def add_paragraph(doc, base_font_size):
+def add_paragraph(doc, base_font_size, footnotes):
     col_paragraph = random.choices([True, False], weights=[0.2, 0.8], k=1)[0]
 
     if col_paragraph:
-        num_columns = random.choice([2, 3])  
-        table = doc.add_table(rows=1, cols=num_columns)  
+        num_columns = random.choice([2, 3])
+        table = doc.add_table(rows=1, cols=num_columns)
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
         table.autofit = True
         remove_table_borders(table)
 
         for cell in table.rows[0].cells:
+            text = fake.text(max_nb_chars=random.randint(100, 500))
             paragraph = cell.paragraphs[0]
-            paragraph.text = fake.text(max_nb_chars=random.randint(100, 500))
+            insert_footnote(paragraph, text, base_font_size, footnotes, footnote_per_page=5)
+
             paragraph_format = paragraph.paragraph_format
 
             paragraph_format.first_line_indent = Pt(35.5) if random.choice([True, False]) else None
@@ -190,7 +201,9 @@ def add_paragraph(doc, base_font_size):
             run.font.size = Pt(base_font_size)
             run.font.name = random.choice(['Times New Roman', 'Arial', 'Calibri', 'Verdana'])
     else:
-        paragraph = doc.add_paragraph(fake.text(max_nb_chars=random.randint(50, 1000)))
+        paragraph = doc.add_paragraph()
+        insert_footnote(paragraph, fake.text(max_nb_chars=random.randint(50, 1000)), base_font_size, footnotes, footnote_per_page=5)
+
         paragraph_format = paragraph.paragraph_format
 
         paragraph_format.first_line_indent = Pt(35.5) if random.choice([True, False]) else None
@@ -210,19 +223,19 @@ def add_title(doc, base_font_size):
     title_number = random.choice([True, False])
     title = doc.add_paragraph()
     run = title.add_run()
-    
-    title_text = fake.sentence(nb_words=random.randint(1, 50))    
+
+    title_text = fake.sentence(nb_words=random.randint(1, 50))
     if title_number:
         title_text = f"{random.randint(0, 100)}. {title_text}"
-    
+
     run.text = title_text
-    
+
     run.font.bold = random.choice([True, False])
     run.font.italic = random.choice([True, False])
-    
+
     title_font_size = base_font_size + random.choice([2, 3, 4, 5])
     run.font.size = Pt(title_font_size)
-    
+
     title_alignment = random.choices(
         [WD_ALIGN_PARAGRAPH.CENTER, WD_ALIGN_PARAGRAPH.LEFT, WD_ALIGN_PARAGRAPH.RIGHT],
         weights=[0.6, 0.2, 0.2],
@@ -233,11 +246,11 @@ def add_title(doc, base_font_size):
 def add_table(doc, base_font_size):
     add_table_caption(doc, base_font_size)
     table = doc.add_table(rows=random.randint(3, 10), cols=random.randint(3, 7))
-    
+
     remove_border = random.choice([True, False])
     if remove_border:
         remove_table_borders(table)
-    
+
     side_borders = False
     if remove_border:
         side_borders = random.choice([True, False])
@@ -251,17 +264,17 @@ def add_table(doc, base_font_size):
                 border_element.set(qn('w:val'), 'nil')
                 borders.append(border_element)
             tblPr.append(borders)
-    
+
     apply_style = random.choice(['Table Grid'])
     table.style = apply_style
-   
+
     table.alignment = random.choice([
         WD_ALIGN_PARAGRAPH.JUSTIFY,
         WD_ALIGN_PARAGRAPH.CENTER,
         WD_ALIGN_PARAGRAPH.LEFT,
         WD_ALIGN_PARAGRAPH.RIGHT
     ])
-    
+
     cell_alignment = random.choice([
         WD_ALIGN_PARAGRAPH.JUSTIFY,
         WD_ALIGN_PARAGRAPH.CENTER,
@@ -272,22 +285,22 @@ def add_table(doc, base_font_size):
     text_color_choice = random.choice(['black', 'white'])
     if text_color_choice == 'black':
         text_rgb = RGBColor(0, 0, 0)
-        
+
         row_colors = [
-            (255, 255, 255),  
-            (220, 220, 220),  
-            (240, 248, 255),  
-            (255, 250, 205),  
-            (255, 228, 225),  
+            (255, 255, 255),
+            (220, 220, 220),
+            (240, 248, 255),
+            (255, 250, 205),
+            (255, 228, 225),
         ]
     else:
         text_rgb = RGBColor(255, 255, 255)
         row_colors = [
-            (0, 0, 0),        
-            (105, 105, 105),  
-            (25, 25, 112),    
-            (139, 0, 0),      
-            (0, 100, 0),      
+            (0, 0, 0),
+            (105, 105, 105),
+            (25, 25, 112),
+            (139, 0, 0),
+            (0, 100, 0),
         ]
 
     if len(row_colors) >= 2:
@@ -298,16 +311,18 @@ def add_table(doc, base_font_size):
     for i, row in enumerate(table.rows):
         bg_color = color1 if i % 2 == 0 else color2
         for cell in row.cells:
-            cell.text = fake.text(max_nb_chars=random.randint(5, 100))
-            
-            if not cell.paragraphs[0].runs:
-                run = cell.paragraphs[0].add_run(cell.text)
+            text = fake.text(max_nb_chars=random.randint(5, 100))
+            paragraph = cell.paragraphs[0]
+            insert_footnote(paragraph, text, base_font_size, [], footnote_per_page=0)
+
+            if not paragraph.runs:
+                run = paragraph.add_run(cell.text)
             else:
-                run = cell.paragraphs[0].runs[0]
-            
+                run = paragraph.runs[0]
+
             run.font.size = Pt(base_font_size)
-            cell.paragraphs[0].alignment = cell_alignment
-            
+            paragraph.alignment = cell_alignment
+
             tcPr = cell._element.get_or_add_tcPr()
             shd = tcPr.find(qn('w:shd'))
             if shd is None:
@@ -315,8 +330,8 @@ def add_table(doc, base_font_size):
                 tcPr.append(shd)
             shd_color = '{:02X}{:02X}{:02X}'.format(*bg_color)
             shd.set(qn('w:fill'), shd_color)
-            shd.set(qn('w:val'), 'clear')  
-            
+            shd.set(qn('w:val'), 'clear')
+
             run.font.color.rgb = text_rgb
 
 def add_picture(doc, base_font_size):
@@ -326,52 +341,51 @@ def add_picture(doc, base_font_size):
         k=1
     )[0]
     image_folder = "Dataset_images"
-    
+
     if os.path.isdir(image_folder):
         images = [f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
         if images:
             image_path = os.path.join(image_folder, random.choice(images))
-            
+
             paragraph = doc.add_paragraph()
             paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
             run = paragraph.add_run()
-            
+
             if not location_signature_after:
                 add_picture_caption(doc, base_font_size)
-            
+
             run.add_picture(image_path)
-            
+
             if location_signature_after:
                 add_picture_caption(doc, base_font_size)
         else:
             print("No images found in folder.")
     else:
         print("Folder is empty.")
-    
 
 def add_picture_caption(doc, base_font_size):
     img_text = random.choice(["Рис. ", "Рисунок "])
     number = str(random.randint(1, 100)) + (random.choice(["-", ""]) if img_text == "Рисунок " else "")
     caption_text = img_text + number
-    
+
     paragraph = doc.add_paragraph()
     paragraph.alignment = random.choices([
         WD_ALIGN_PARAGRAPH.CENTER,
         WD_ALIGN_PARAGRAPH.LEFT,
         WD_ALIGN_PARAGRAPH.RIGHT
         ], weights=[0.5, 0.25, 0.25], k=1)[0]
-    
+
     run = paragraph.add_run()
-    run.add_text(" " + caption_text)  
-    
+    run.add_text(" " + caption_text)
+
     run.font.size = Pt(base_font_size - random.choice([1, 2, 0, 3]))
-    run.font.italic = True  
+    run.font.italic = True
 
 def add_table_caption(doc, base_font_size):
     tbl_text = random.choice(["Табл. ", "Таблица "])
     number = str(random.randint(1, 100)) + (random.choice(["-", ""]) if tbl_text == "Таблица " else "")
     caption_text = tbl_text + number
-    
+
     paragraph = doc.add_paragraph()
     paragraph.alignment = random.choices([
         WD_ALIGN_PARAGRAPH.CENTER,
@@ -379,10 +393,10 @@ def add_table_caption(doc, base_font_size):
         WD_ALIGN_PARAGRAPH.RIGHT
         ], weights=[0.5, 0.25, 0.25], k=1)[0]
     run = paragraph.add_run()
-    run.add_text(" " + caption_text)  
-    
+    run.add_text(" " + caption_text)
+
     run.font.size = Pt(base_font_size - random.choice([1, 2, 0, 3]))
-    run.font.italic = True  
+    run.font.italic = True
 
 def add_numbered_list(doc, base_font_size):
     count = random.randint(2,7)
@@ -428,7 +442,7 @@ def add_footer(doc):
     if page_number:
         add_page_number(paragraph)
     else:
-        paragraph.add_run(fake.word())     
+        paragraph.add_run(fake.word())
 
 def add_page_number(paragraph):
     from docx.oxml import OxmlElement
@@ -445,45 +459,37 @@ def add_page_number(paragraph):
     run._r.append(fldChar2)
 
 def to_superscript(number):
-    """
-    Преобразует число в его суперскриптный аналог.
-    Например, 1 -> ¹, 2 -> ² и т.д.
-    """
     superscript_map = str.maketrans('0123456789', '⁰¹²³⁴⁵⁶⁷⁸⁹')
     return str(number).translate(superscript_map)
 
-def insert_footnote(paragraph, text, base_font_size, current_page_footnotes, footnote_per_page):
+def insert_footnote(paragraph, text, base_font_size, footnotes, footnote_per_page=5):
     words = text.split()
     if len(words) < 3:
         run = paragraph.add_run(text)
         run.font.size = Pt(base_font_size)
         return
 
-    # Решаем, вставлять ли сноску (например, с вероятностью 20%)
-    if random.random() < 0.2 and len(current_page_footnotes) < footnote_per_page:
-        footnote_number = len(current_page_footnotes) + 1
+    if random.random() < 0.2 and len(footnotes) < footnote_per_page:
+        footnote_number = len(footnotes) + 1
         footnote_number_sup = to_superscript(footnote_number)
 
-        # Выбираем случайное место для вставки сноски
         insert_pos = random.randint(1, len(words)-1)
         new_text = ' '.join(words[:insert_pos]) + f' {footnote_number_sup} ' + ' '.join(words[insert_pos:])
         run = paragraph.add_run(new_text)
         run.font.size = Pt(base_font_size)
-        
+
         footnote_text = fake.text(max_nb_chars=random.randint(20, 50))
-        current_page_footnotes.append((footnote_number, footnote_text))
+        footnotes.append((footnote_number, footnote_text))
     else:
-        run = paragraph.add_run(text)
+        run = paragraph.add_run(' '.join(words))
         run.font.size = Pt(base_font_size)
 
 def add_footnotes_section(doc, footnotes, base_font_size):
-
     if not footnotes:
         return
 
     doc.add_paragraph("_" * 50)
 
-    # Добавляем каждую сноску
     for number, text in footnotes:
         footnote_paragraph = doc.add_paragraph()
         footnote_run = footnote_paragraph.add_run(f"{number}. {text}")
@@ -494,23 +500,22 @@ def add_formula(doc, base_font_size):
     image_stream = generate_formula_image()
 
     paragraph = doc.add_paragraph()
-    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER  
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = paragraph.add_run()
     try:
-        run.add_picture(image_stream, width=Pt(300))  
+        run.add_picture(image_stream, width=Pt(300))
     except Exception as e:
         print(f"Ошибка при вставке формулы: {e}")
 
 def main():
-    all_data = []  # Список для хранения данных о документах
+    all_data = []
 
-    for index in range(10000):  
+    for index in range(100):
         filename, base_font_size = create_document(index)
-        base_filename = os.path.splitext(os.path.basename(filename))[0]  
+        base_filename = os.path.splitext(os.path.basename(filename))[0]
         all_data.append({'filename': base_filename, 'base_font_size': base_font_size})
         print(f"Сгенерирован документ: {filename} с базовым размером шрифта: {base_font_size}")
 
-    # Запись данных в CSV
     output_csv = 'font_sizes.csv'
     with open(output_csv, 'w', newline='', encoding='utf-8') as csvfile:
         fieldnames = ['filename', 'base_font_size']
