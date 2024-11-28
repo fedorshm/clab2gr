@@ -80,3 +80,5 @@ Fitness: 0.8722626922069484
   
 Ссылка на гугл дтск с папками runs для всеж перечисленных моделей:  
 https://drive.google.com/drive/folders/1fXM9wnptK66hw0_CUtLNPypN0U9ws4-Q?usp=sharing  
+
+Файл annotated_document.pdf содержит детектированные элементы документа с учётом всех настроек актуальной модели
