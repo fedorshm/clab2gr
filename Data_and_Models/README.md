@@ -77,3 +77,6 @@ Fitness: 0.8722626922069484
     10: 0.88, # footnote  
     6: 0.9, # numbered_list  
     7: 0.9 # marked_list  
+  
+Ссылка на гугл дтск с папками runs для всеж перечисленных моделей:  
+https://drive.google.com/drive/folders/1fXM9wnptK66hw0_CUtLNPypN0U9ws4-Q?usp=sharing  
