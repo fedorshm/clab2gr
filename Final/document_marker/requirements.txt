@@ -1,0 +1,6 @@
+PyMuPDF
+matplotlib
+Pillow
+easyocr
+pypdfium2
+pdfminer.six
