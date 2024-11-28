@@ -5,6 +5,7 @@ import cv2
 from ultralytics import YOLO
 import pypdfium2 as pdfium
 import json
+import time 
 
 TEMP_PDF_PATH = "temp_doc.pdf"
 TEMP_PNG_DIR = "temp_pngs"
@@ -57,8 +58,8 @@ def run_yolo_on_multiple_images(model_path, png_file_paths, output_directory):
         filtered_boxes = []
         for result in results:
             for box in result.boxes:
-                cls = int(box.cls) 
-                conf = float(box.conf)  
+                cls = int(box.cls)
+                conf = float(box.conf)
 
                 if cls in custom_confidences:
                     if conf >= custom_confidences[cls]:
@@ -99,6 +100,8 @@ def main():
 
     uploaded_file = st.file_uploader("Загрузка документа", type=["pdf", "png"])
     if uploaded_file is not None:
+        start_time = time.time() 
+
         file_name = uploaded_file.name
         file_extension = os.path.splitext(file_name)[-1].lower()
         
@@ -130,6 +133,10 @@ def main():
                     mime="application/json"
                 )
 
+            end_time = time.time()  
+            processing_time = end_time - start_time
+            st.write(f"Время обработки: {processing_time:.2f} сек.")
+
         cleanup_temp_files()
 
 def cleanup_temp_files():
@@ -151,4 +158,3 @@ def cleanup_temp_files():
 
 if __name__ == "__main__":
     main()
-
