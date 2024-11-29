@@ -97,4 +97,7 @@ Fitness: 0.9355054868752979
 Ссылка на гугл диск с папками runs для всеж перечисленных моделей:  
 https://drive.google.com/drive/folders/1fXM9wnptK66hw0_CUtLNPypN0U9ws4-Q?usp=sharing  
 
-Файл annotated_document1.pdf содержит детектированные элементы документа с учётом всех настроек актуальной модели, код для использования модели представлен в файле Сonfidence.ipynb
+Файл annotated_document1.pdf содержит детектированные элементы документа с учётом всех настроек актуальной модели, код для использования модели представлен в файле Сonfidence.ipynb.  
+Файл Predict.ipynb содержит результаты работы модели на тестовых датасетах команд.  
+Ссылка на результаты работы модели на тестовых датасетах других команд:
+https://drive.google.com/drive/folders/1tuWEuzW_-BF-v7A-2mkPZVMTdjPCp_jT?usp=drive_link
