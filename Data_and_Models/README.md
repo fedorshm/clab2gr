@@ -99,5 +99,5 @@ https://drive.google.com/drive/folders/1fXM9wnptK66hw0_CUtLNPypN0U9ws4-Q?usp=sha
 
 Файл annotated_document1.pdf содержит детектированные элементы документа с учётом всех настроек актуальной модели, код для использования модели представлен в файле Сonfidence.ipynb.  
 Файл Predict.ipynb содержит результаты работы модели на тестовых датасетах команд.  
-Ссылка на результаты работы модели на тестовых датасетах других команд:
-https://drive.google.com/drive/folders/1tuWEuzW_-BF-v7A-2mkPZVMTdjPCp_jT?usp=drive_link
+Ссылка на результаты работы модели на тестовых датасетах других команд со всеми данными для оценки: 
+https://drive.google.com/drive/folders/1tuWEuzW_-BF-v7A-2mkPZVMTdjPCp_jT?usp=drive_link  
